@@ -35,8 +35,8 @@
 */
 #include "ESP8266.h"
 
-const char *SSID     = "WIFI-SSID";
-const char *PASSWORD = "WIFI-PASWWORD";
+const char *SSID     = "WIFI_SSID";
+const char *PASSWORD = "WIFI_PASSWORD";
 
 SoftwareSerial mySerial(10, 11); //SoftwareSerial pins for MEGA/Uno. For other boards see: https://www.arduino.cc/en/Reference/SoftwareSerial
 
@@ -58,7 +58,7 @@ void setup(void)
 
 void loop(void)
 {   
-    Serial.println("Sending Request to www.google.com");
+    Serial.println("Sending Request to www.bing.com");
     wifi.httpGet();
 
     delay(4000);

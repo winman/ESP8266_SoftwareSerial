@@ -38,6 +38,7 @@
         Serial.print("] ");\
       }\
       Serial.print(arg);\
+      Serial.print("\n");\
     }\
   } while(0)
 
@@ -58,7 +59,11 @@ bool ESP8266::autoSetBaud(uint32_t baudRateSet)
 {
   rx_empty();
   long time0 = millis();
-  long baudRateArray[] = {9600, 19200, 57600, 115200}; //These are the optional default baudrates
+  long baudRateArray[] = {9600, 19200, 38400, 57600, 74880, 115200}; //These are the optional default baudrates
+  long startRate=9600;
+  long endRate=115200;
+  long stepRate=3200;
+  long curRate=0;
   const int attempts = 5;
   bool baudFlag = 0;
 
@@ -67,17 +72,24 @@ bool ESP8266::autoSetBaud(uint32_t baudRateSet)
 #endif
 
   for (int j = 0 ; j < attempts ; j++) {                    //attempt to connect to esp over each baudrate
-    for (int i = 0; i < sizeof(baudRateArray) ; i++)        //check for current esp baudrate
+    //logDebug((String)"size of baud array...");logDebug(sizeof(baudRateArray));
+    logDebug((String)"start attamp:"+j);
+    //for (int i = 0; i < sizeof(baudRateArray)/sizeof(long) ; i++)        //check for current esp baudrate
+    for (curRate=startRate; curRate<=endRate; curRate+=stepRate)
     {
-      m_puart->begin(baudRateArray[i]);
-
+      //logDebug(baudRateArray[i]);
+      logDebug((String)"change to Baud:["+curRate+"]");
+     // m_puart->begin(baudRateArray[i]);
+     m_puart->begin(curRate);
       m_puart->println("AT");
-      delay(20);
+      delay(2000);
       while (m_puart->available()) {
         String inData = m_puart->readStringUntil('\n');
+        logDebug((String)"\t->got return data["+inData+"]");
         if (inData.indexOf("OK") != -1) {       //if OK received, this is the current baudrate of the ESP
           baudFlag = 1;
-          delay(15);
+          logDebug("cur baud got, recv ok");
+          delay(1500);
           break;
         }
 
@@ -90,15 +102,23 @@ bool ESP8266::autoSetBaud(uint32_t baudRateSet)
       baudFlag = 0;
       for (int j = 0; j < attempts; j++)               //at the found baudrate,
       {
-        m_puart->print("AT+CIOBAUD=");
-        m_puart->println(baudRateSet);
-        delay(20);
+       // m_puart->print("AT+CIOBAUD=");
+       // m_puart->println(baudRateSet);
+       logDebug("now change to target baud");
+       logDebug(baudRateSet);
+       m_puart->print("AT+UART_CUR=");
+     m_puart->print(baudRateSet);
+     m_puart->println(",8,1,0,0");
+        delay(2000);
         while (m_puart->available()) {
           String inData = m_puart->readStringUntil('\n');
-          if (inData.indexOf("OK") != -1 || inData.indexOf("AT") != -1) {
+         // if (inData.indexOf("OK") != -1 || inData.indexOf("AT") != -1) {
+         if (inData.indexOf("OK")!=-1){
+        logDebug("change done, recv ok");
+        logDebug(inData);
             baudFlag = 1;
             m_puart->begin(baudRateSet);
-            delay(100);
+            delay(1000);
             return 1;
           }
 
@@ -613,6 +633,7 @@ bool ESP8266::recvFind(String target, uint32_t timeout)
 {
   String data_tmp;
   data_tmp = recvString(target, timeout);
+  logDebug(data_tmp);
   if (data_tmp.indexOf(target) != -1) {
     return true;
   }
@@ -667,6 +688,7 @@ bool ESP8266::qATCWMODE(uint8_t *mode)
   rx_empty();
   m_puart->println("AT+CWMODE?");
   ret = recvFindAndFilter("OK", "+CWMODE:", "\r\n\r\nOK", str_mode);
+  logDebug(ret);
   if (ret) {
     *mode = (uint8_t)str_mode.toInt();
     return true;
@@ -949,9 +971,9 @@ String inData = "";
 }
 int ESP8266::httpGet()
 {
-  char* request =  "GET / HTTP/1.1\r\nHost: www.google.com\r\nConnection: close\r\n\r\n";
+  char* request =  "GET / HTTP/1.1\r\nHost: www.bing.com\r\nConnection: close\r\n\r\n";
 
-  if (createTCP("www.google.com", 80))
+  if (createTCP("www.bing.com", 80))
   {
     Serial.println(F("create tcp - OK"));
   }
@@ -973,6 +995,7 @@ int ESP8266::httpGet()
 
   return len;
 }
+
 
 
 
